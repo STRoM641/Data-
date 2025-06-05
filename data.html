@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <title>مبدل تاریخ شمسی ↔ میلادی</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #d6f5d6; /* سبز کمرنگ */
+      color: #333;
+      direction: rtl;
+      text-align: center;
+      padding: 30px;
+    }
+    .container {
+      background: white;
+      padding: 40px 60px;
+      border-radius: 12px;
+      max-width: 650px;
+      margin: auto;
+      box-shadow: 0 0 12px rgba(0,0,0,0.15);
+    }
+    input {
+      padding: 20px;
+      font-size: 22px;
+      width: 95%;
+      margin: 15px 0;
+      text-align: center;
+      border-radius: 8px;
+      border: 1.5px solid #bbb;
+    }
+    button {
+      padding: 18px 40px;
+      background-color: #009688;
+      color: white;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #00796B;
+    }
+    .result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #00796B;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>مبدل تاریخ شمسی ↔ میلادی</h2>
+    
+    <input type="text" id="shamsiInput" placeholder="مثال: 1404/03/15" oninput="this.value = this.value.replace(/[^0-9\/]/g, '')">
+    <button onclick="convertToGregorian()">تبدیل به میلادی</button>
+    
+    <input type="text" id="miladiInput" placeholder="مثال: 2025/06/05" oninput="this.value = this.value.replace(/[^0-9\/]/g, '')">
+    <button onclick="convertToJalali()">تبدیل به شمسی</button>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    // تابع کمکی تقسیم صحیح
+    function div(a,b) { return Math.floor(a/b); }
+
+    // تبدیل میلادی به شمسی
+    function toJalali(gy, gm, gd) {
+      var g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+      var jy, jm, jd, gy2, days;
+      gy2 = (gm > 2)? (gy + 1) : gy;
+      days = 355666 + (365 * gy) + div((gy2 + 3), 4) - div((gy2 + 99),100) + div((gy2 + 399),400) + gd + g_d_m[gm - 1];
+      jy = -1595 + (33 * div(days, 12053)); days %= 12053;
+      jy += 4 * div(days,1461); days %= 1461;
+      if (days > 365) {
+        jy += div((days - 1), 365);
+        days = (days - 1)%365;
+      }
+      if (days < 186) {
+        jm = 1 + div(days, 31); jd = 1 + (days % 31);
+      } else {
+        jm = 7 + div((days - 186), 30); jd = 1 + ((days - 186) % 30);
+      }
+      return {jy, jm, jd};
+    }
+
+    // تبدیل شمسی به میلادی
+    function toGregorian(jy, jm, jd) {
+      jy += 1595;
+      var days = -355668 + (365 * jy) + div(jy / 33, 1) * 8 + div(((jy % 33) + 3) / 4, 1);
+      for (var i = 1; i < jm; ++i) {
+        days += (i <= 6)? 31 : 30;
+      }
+      days += jd;
+      var gy = 400 * div(days, 146097); days %= 146097;
+      if (days > 36524) {
+        gy += 100 * div(--days, 36524); days %= 36524;
+        if (days >= 365) days++;
+      }
+      gy += 4 * div(days, 1461); days %= 1461;
+      if (days > 365) {
+        gy += div((days - 1), 365);
+        days = (days - 1) % 365;
+      }
+      var gd = days + 1;
+      var sal_a = [0,31,(gy % 4 === 0 && gy % 100 !== 0 || gy % 400 === 0)?29:28,31,30,31,30,31,31,30,31,30,31];
+      var gm;
+      for (gm = 0; gm < 13; gm++) {
+        var v = sal_a[gm];
+        if (gd <= v) break;
+        gd -= v;
+      }
+      return {gy, gm, gd};
+    }
+
+    function convertToGregorian() {
+      const input = document.getElementById("shamsiInput").value;
+      if(!input.match(/^\d{4}\/\d{1,2}\/\d{1,2}$/)) {
+        document.getElementById("result").innerText = "فرمت تاریخ شمسی باید به شکل yyyy/mm/dd باشد.";
+        return;
+      }
+      const [jy, jm, jd] = input.split('/').map(Number);
+      const g = toGregorian(jy, jm, jd);
+      document.getElementById("result").innerText = `تاریخ میلادی: ${g.gy}/${g.gm}/${g.gd}`;
+    }
+
+    function convertToJalali() {
+      const input = document.getElementById("miladiInput").value;
+      if(!input.match(/^\d{4}\/\d{1,2}\/\d{1,2}$/)) {
+        document.getElementById("result").innerText = "فرمت تاریخ میلادی باید به شکل yyyy/mm/dd باشد.";
+        return;
+      }
+      const [gy, gm, gd] = input.split('/').map(Number);
+      const j = toJalali(gy, gm, gd);
+      document.getElementById("result").innerText = `تاریخ شمسی: ${j.jy}/${j.jm}/${j.jd}`;
+    }
+  </script>
+</body>
+</html>
